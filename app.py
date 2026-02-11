@@ -8,52 +8,40 @@ CHAT_ID = "7407364153"
 
 def send_telegram(text):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {
+    data = {
         "chat_id": CHAT_ID,
         "text": text
     }
-    requests.post(url, json=payload, timeout=10)
+    requests.post(url, data=data)
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.get_json(silent=True)
+    data = request.json
 
-    if not data:
-        send_telegram("⚠️ Webhook received, but no JSON data")
-        return "ok"
+    symbol = data.get("symbol", "-")
+    tf = data.get("tf", "-")
+    signal = data.get("signal", "-")
+    zone = data.get("zone", "-")
+    entry = data.get("entry", "-")
+    sl = data.get("sl", "-")
+    tp = data.get("tp", "-")
 
-    # извлекаем поля
-    symbol = data.get("symbol", "—")
-    timeframe = data.get("timeframe", "—")
-    signal_type = data.get("type", "—")
-    setup = data.get("setup", "—")
-    trend = data.get("trend", "—")
-    entry = data.get("entry", "—")
-    stop = data.get("stop", "—")
-    tp = data.get("tp", "—")
-    rr = data.get("rr", "—")
-    quality = data.get("quality", "—")
-    confidence = data.get("confidence", "—")
+    direction = "🟢 LONG" if signal == "LONG" else "🔴 SHORT"
 
-    direction_emoji = "🟢" if signal_type.upper() == "LONG" else "🔴"
+    message = f"""📊 {symbol} ({tf})
 
-    message = (
-        f"📊 {symbol} ({timeframe})\n\n"
-        f"{direction_emoji} {signal_type}\n"
-        f"📦 Setup: {setup}\n"
-        f"📈 Trend: {trend}\n\n"
-        f"🎯 Entry: {entry}\n"
-        f"🛑 SL: {stop}\n"
-        f"💰 TP: {tp}\n"
-        f"⚖️ RR: {rr}\n\n"
-        f"⭐ Quality: {quality}\n"
-        f"📊 Confidence: {confidence}"
-    )
+{direction}
+
+📦 Zone: {zone}
+
+🎯 Entry: {entry}
+🛑 SL: {sl}
+💰 TP (HTF): {tp}
+"""
 
     send_telegram(message)
+
     return "ok"
 
-@app.route("/")
-def home():
-    return "Bot is running"
-
+if __name__ == "__main__":
+    app.run()
