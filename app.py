@@ -6,42 +6,56 @@ app = Flask(__name__)
 BOT_TOKEN = "8216575089:AAEh2oUW3nN0TRq3T3Zw1f9GwFK3yah523Y"
 CHAT_ID = "7407364153"
 
-def send_telegram(text):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    data = {
-        "chat_id": CHAT_ID,
-        "text": text
-    }
-    requests.post(url, data=data)
-
-@app.route("/webhook", methods=["POST"])
+@app.route("/", methods=["POST"])
 def webhook():
     data = request.json
 
-    symbol = data.get("symbol", "-")
-    tf = data.get("tf", "-")
-    signal = data.get("signal", "-")
-    zone = data.get("zone", "-")
-    entry = data.get("entry", "-")
-    sl = data.get("sl", "-")
-    tp = data.get("tp", "-")
+    if not data:
+        return "No JSON", 400
 
-    direction = "🟢 LONG" if signal == "LONG" else "🔴 SHORT"
+    symbol = data.get("symbol", "—")
+    tf = data.get("tf", "—")
+    signal = data.get("signal", "—")
+    zone = data.get("zone", "—")
+    htf_trend = data.get("htf_trend", "—")
+    bos = data.get("bos", "—")
+    impulse = data.get("impulse", "—")
+    zone_size = data.get("zone_size_atr", "—")
+    age = data.get("age", "—")
+    entry = data.get("entry", "—")
+    sl = data.get("sl", "—")
 
-    message = f"""📊 {symbol} ({tf})
+    emoji = "🟢" if signal == "LONG" else "🔴"
 
-{direction}
+    message = f"""
+📊 {symbol} ({tf})
+
+{emoji} {signal}
 
 📦 Zone: {zone}
+📈 H4 Trend: {htf_trend}
+📌 BOS: {bos}
+⚡ Impulse: {impulse}
+
+📐 Zone Size (ATR): {zone_size}
+⏳ Zone Age: {age} bars
 
 🎯 Entry: {entry}
 🛑 SL: {sl}
-💰 TP (HTF): {tp}
 """
 
-    send_telegram(message)
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
-    return "ok"
+    payload = {
+        "chat_id": CHAT_ID,
+        "text": message
+    }
 
-if __name__ == "__main__":
-    app.run()
+    requests.post(url, json=payload)
+
+    return "OK", 200
+
+
+@app.route("/", methods=["GET"])
+def home():
+    return "Bot is running", 200
