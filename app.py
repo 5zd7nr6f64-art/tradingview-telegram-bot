@@ -6,60 +6,59 @@ app = Flask(__name__)
 BOT_TOKEN = "8216575089:AAEh2oUW3nN0TRq3T3Zw1f9GwFK3yah523Y"
 CHAT_ID = "7407364153"
 
-@app.route("/", methods=["POST"])
+def send_telegram(text):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    data = {
+        "chat_id": CHAT_ID,
+        "text": text
+    }
+    requests.post(url, data=data)
+
+@app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
 
     if not data:
-        return "No JSON received", 400
+        return "no json", 400
 
-    try:
-        symbol = data.get("symbol", "—")
-        tf = data.get("tf", "—")
-        signal = data.get("signal", "—")
-        zone = data.get("zone", "—")
-        htf_trend = data.get("htf_trend", "—")
-        bos = data.get("bos", "—")
-        impulse = data.get("impulse", "—")
-        zone_size = data.get("zone_size_atr", "—")
-        age = data.get("age", "—")
-        entry = data.get("entry", "—")
-        sl = data.get("sl", "—")
+    symbol = data.get("symbol", "-")
+    tf = data.get("tf", "-")
+    signal = data.get("signal", "-")
+    zone = data.get("zone", "-")
 
-        emoji = "🟢" if signal == "LONG" else "🔴"
+    # 🔹 Новые поля из Pine v6
+    htf_trend = data.get("htf_trend", "-")
+    bos = data.get("bos", "-")
+    impulse = data.get("impulse", "-")
+    zone_size = data.get("zone_size_atr", "-")
+    age = data.get("age", "-")
 
-        message = (
-            f"📊 {symbol} ({tf})\n\n"
-            f"{emoji} {signal}\n\n"
-            f"📦 Zone: {zone}\n"
-            f"📈 H4 Trend: {htf_trend}\n"
-            f"📌 BOS: {bos}\n"
-            f"⚡ Impulse: {impulse}\n\n"
-            f"📐 Zone Size (ATR): {zone_size}\n"
-            f"⏳ Zone Age: {age} bars\n\n"
-            f"🎯 Entry: {entry}\n"
-            f"🛑 SL: {sl}"
-        )
+    entry = data.get("entry", "-")
+    sl = data.get("sl", "-")
+    tp = data.get("tp", "-")
 
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    direction = "🟢 LONG" if signal == "LONG" else "🔴 SHORT"
 
-        payload = {
-            "chat_id": CHAT_ID,
-            "text": message,
-            "parse_mode": "HTML"
-        }
+    message = f"""📊 {symbol} ({tf})
 
-        response = requests.post(url, json=payload)
+{direction}
 
-        print("Telegram response:", response.text)
+📦 Zone: {zone}
+📈 H4 Trend: {htf_trend}
+📌 BOS: {bos}
+⚡ Impulse: {impulse}
 
-        return "OK", 200
+📐 Zone Size (ATR): {zone_size}
+⏳ Zone Age: {age} bars
 
-    except Exception as e:
-        print("ERROR:", str(e))
-        return "Error", 500
+🎯 Entry: {entry}
+🛑 SL: {sl}
+💰 TP (HTF): {tp}
+"""
 
+    send_telegram(message)
 
-@app.route("/", methods=["GET"])
-def home():
-    return "Bot is running", 200
+    return "ok"
+
+if __name__ == "__main__":
+    app.run()
